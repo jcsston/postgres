@@ -1119,14 +1119,14 @@ dumpTableData_copy(Archive *fout, void *dcontext)
 
 	if (oids && hasoids)
 	{
-		appendPQExpBuffer(q, "COPY %s %s WITH OIDS TO stdout;",
+		appendPQExpBuffer(q, "COPY %s %s WITH OIDS TO stdout WITH BINARY;",
 						  fmtQualifiedId(tbinfo->dobj.namespace->dobj.name,
 										 classname),
 						  column_list);
 	}
 	else
 	{
-		appendPQExpBuffer(q, "COPY %s %s TO stdout;",
+		appendPQExpBuffer(q, "COPY %s %s TO stdout WITH BINARY;",
 						  fmtQualifiedId(tbinfo->dobj.namespace->dobj.name,
 										 classname),
 						  column_list);
@@ -1194,7 +1194,7 @@ dumpTableData_copy(Archive *fout, void *dcontext)
 		 * ----------
 		 */
 	}
-	archprintf(fout, "\\.\n\n\n");
+	//archprintf(fout, "\\.\n\n\n");
 
 	if (ret == -2)
 	{
@@ -1391,7 +1391,7 @@ dumpTableData(Archive *fout, TableDataInfo *tdinfo)
 		/* must use 2 steps here 'cause fmtId is nonreentrant */
 		appendPQExpBuffer(copyBuf, "COPY %s ",
 						  fmtId(tbinfo->dobj.name));
-		appendPQExpBuffer(copyBuf, "%s %sFROM stdin;\n",
+		appendPQExpBuffer(copyBuf, "%s %sFROM stdin WITH BINARY;\n",
 						  fmtCopyColumnList(tbinfo),
 					  (tdinfo->oids && tbinfo->hasoids) ? "WITH OIDS " : "");
 		copyStmt = copyBuf->data;
