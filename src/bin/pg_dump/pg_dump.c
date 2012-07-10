@@ -1199,7 +1199,8 @@ dumpTableData_copy(Archive *fout, void *dcontext)
 		 * ----------
 		 */
 	}
-	//archprintf(fout, "\\.\n\n\n");
+	if (binary_copy == 0)
+		archprintf(fout, "\\.\n\n\n");
 
 	if (ret == -2)
 	{
