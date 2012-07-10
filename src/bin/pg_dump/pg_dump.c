@@ -104,6 +104,7 @@ static const CatalogId nilCatalogId = {0, 0};
 
 /* flags for various command-line long options */
 static int	binary_upgrade = 0;
+static int	binary_copy = 0;
 static int	disable_dollar_quoting = 0;
 static int	dump_inserts = 0;
 static int	column_inserts = 0;
@@ -265,6 +266,7 @@ main(int argc, char **argv)
 		 */
 		{"attribute-inserts", no_argument, &column_inserts, 1},
 		{"binary-upgrade", no_argument, &binary_upgrade, 1},
+		{"binary-copy", no_argument, &binary_copy, 1},
 		{"column-inserts", no_argument, &column_inserts, 1},
 		{"disable-dollar-quoting", no_argument, &disable_dollar_quoting, 1},
 		{"disable-triggers", no_argument, &disable_triggers, 1},
@@ -812,6 +814,7 @@ help(const char *progname)
 	printf(_("  -t, --table=TABLE           dump the named table(s) only\n"));
 	printf(_("  -T, --exclude-table=TABLE   do NOT dump the named table(s)\n"));
 	printf(_("  -x, --no-privileges         do not dump privileges (grant/revoke)\n"));
+	printf(_("  --binary-copy               dump data as COPY WITH BINARY\n"));
 	printf(_("  --binary-upgrade            for use by upgrade utilities only\n"));
 	printf(_("  --inserts                   dump data as INSERT commands, rather than COPY\n"));
 	printf(_("  --column-inserts            dump data as INSERT commands with column names\n"));
@@ -1119,17 +1122,19 @@ dumpTableData_copy(Archive *fout, void *dcontext)
 
 	if (oids && hasoids)
 	{
-		appendPQExpBuffer(q, "COPY %s %s WITH OIDS TO stdout WITH BINARY;",
+		appendPQExpBuffer(q, "COPY %s %s WITH OIDS TO stdout%s;",
 						  fmtQualifiedId(tbinfo->dobj.namespace->dobj.name,
 										 classname),
-						  column_list);
+						  column_list,
+						  (binary_copy == 1) ? " WITH BINARY" : "");
 	}
 	else
 	{
-		appendPQExpBuffer(q, "COPY %s %s TO stdout WITH BINARY;",
+		appendPQExpBuffer(q, "COPY %s %s TO stdout%s;",
 						  fmtQualifiedId(tbinfo->dobj.namespace->dobj.name,
 										 classname),
-						  column_list);
+						  column_list,
+						  (binary_copy == 1) ? " WITH BINARY" : "");
 	}
 	res = PQexec(g_conn, q->data);
 	check_sql_result(res, g_conn, q->data, PGRES_COPY_OUT);
@@ -1391,9 +1396,10 @@ dumpTableData(Archive *fout, TableDataInfo *tdinfo)
 		/* must use 2 steps here 'cause fmtId is nonreentrant */
 		appendPQExpBuffer(copyBuf, "COPY %s ",
 						  fmtId(tbinfo->dobj.name));
-		appendPQExpBuffer(copyBuf, "%s %sFROM stdin WITH BINARY;\n",
+		appendPQExpBuffer(copyBuf, "%s %sFROM stdin%;\n",
 						  fmtCopyColumnList(tbinfo),
-					  (tdinfo->oids && tbinfo->hasoids) ? "WITH OIDS " : "");
+					  (tdinfo->oids && tbinfo->hasoids) ? "WITH OIDS " : "",
+					  (binary_copy == 1) ? " WITH BINARY" : "");
 		copyStmt = copyBuf->data;
 	}
 	else
